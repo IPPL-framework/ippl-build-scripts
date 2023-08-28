@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# IPPL Toolchain Build recipe for Heffte
+#
+#
+P=heffte
+V_MAJOR=2
+V_MINOR=3
+V=${V_MAJOR}.${V_MINOR}.0
+V='master'
+backend=${backend:-fftw}
+build_type=${build_type:-$backend}
+NJOBS=8
+trap "itb_exit" EXIT
+
+mkdir -p "${ITB_SRC_DIR}/$P" && cd "$_"
+
+if [ ! -d $P-$V ]; then
+    if [ "$V" = "master" ]; then
+        echo "git clone in $PWD"
+        git clone https://github.com/icl-utk-edu/heffte.git $P-$V
+        git checkout f7e72ad
+    else
+        echo "get tarfile"
+        FNAME="$P-$V.tar.gz"
+        DOWNLOAD_URL="https://github.com/icl-utk-edu/heffte/archive/refs/tags/v$V.tar.gz"
+        SRC_FILE="${ITB_DOWNLOAD_DIR}/${FNAME}"
+        # download
+        curl -L \
+        --output "${SRC_FILE}" \
+        "${DOWNLOAD_URL}"
+
+        tar xvf "${SRC_FILE}"
+    fi
+else
+    echo "Found existing installation"
+fi
+
+cd "$OLDPWD"
+
+CUFFT=${CUFFT:-OFF}
+FFTW=${FFTW:-OFF}
+MKL=${MKL:-OFF}
+
+if [[ "$backend" == "cufft" || "$build_type" == "cuda" ]]; then
+    CUFFT=ON
+elif [[ "$backend" == "fftw" || "$build_type" == "openmp" || "$build_type" == "serial" ]]; then
+    FFTW=ON
+elif [[ "$backend" == "mkl" ]]; then
+    MKL=ON
+fi
+
+mkdir -p ${ITB_SRC_DIR}/$P/build_${build_type} && cd $_
+
+cmake \
+    -DCMAKE_INSTALL_PREFIX=${ITB_PREFIX} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=ON \
+    -DHeffte_ENABLE_FFTW="${FFTW}" \
+    -DFFTW_ROOT="${FFTW_DIR}" \
+    -DHeffte_ENABLE_CUDA="${CUFFT}" \
+    -DCUDA_TOOLKIT_ROOT_DIR="${CUDA_DIR}" \
+    -DHeffte_ENABLE_MKL="${MKL}" \
+    -DMKL_ROOT="${MKL_DIR}" \
+    ${ITB_SRC_DIR}/$P/$P-$V || exit ${ITB_ERR_CONFIGURE}
+
+# compile & install
+make -j ${NJOBS}
+make install
