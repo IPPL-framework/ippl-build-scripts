@@ -15,7 +15,7 @@ The ITB scripts can be controlled using the environment variables summarized bel
 
 # Kokkos Installer
 
-The Kokkos script downloads and compiles Kokkos 4.1.00.
+The Kokkos script `100-build-kokkos` downloads and compiles Kokkos 4.1.00.
 
 ## Environment Variables
 
@@ -32,7 +32,7 @@ The Kokkos script downloads and compiles Kokkos 4.1.00.
 
 # heFFTe Installer
 
-The heFFTe script downloads and installs the current master branch of heFFTe (or a chosen release version).
+The heFFTe script `200-build-heffte` downloads and installs the current master branch of heFFTe (or a chosen release version).
 
 ## Environment Variables
 
@@ -46,7 +46,7 @@ The heFFTe script downloads and installs the current master branch of heFFTe (or
 
 # IPPL Installer
 
-The IPPL script builds IPPL using the dependencies with the appropriate settings.
+The IPPL script `300-build-ippl` builds IPPL using the dependencies with the appropriate settings.
 
 ## Environment Variables
 
