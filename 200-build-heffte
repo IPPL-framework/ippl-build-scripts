@@ -44,7 +44,7 @@ MKL=${MKL:-OFF}
 
 if [[ "$backend" == "cufft" || "$build_type" == "cuda" ]]; then
     CUFFT=ON
-elif [[ "$backend" == "fftw" || "$build_type" == "openmp" || "$build_type" == "serial" ]]; then
+elif [[ "$backend" == "fftw" ]]; then
     FFTW=ON
 elif [[ "$backend" == "mkl" ]]; then
     MKL=ON
