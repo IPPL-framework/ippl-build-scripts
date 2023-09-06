@@ -77,21 +77,34 @@ function help() {
     echo "For long form options, arguments must be given after an equal sign (--opt=arg)"
     echo "Flags:"
     echo "  -h|--help: show this help"
+
     echo "  -t|--target target: preset build for target (cuda/openmp/serial) or name for custom build;"
     echo "                      this flag is REQUIRED as it will be used to identify the build directories"
-    echo "  --enable-cuda: build for CUDA (enables CUDA for Kokkos and cuFFT for heFFTe)"
-    echo "  --enable-openmp: build for OpenMP (enables OpenMP for Kokkos and FFTW for heFFTe)"
-    echo "  --enable-serial: enable serial for Kokkos (also enables FFTW for heFFTe)"
-    echo "  --enable-mkl: enable MKL for heFFTe"
+
+    # Kokkos configuration
+    echo "  --enable-cuda: enable CUDA for Kokkos"
+    echo "  --enable-openmp: enable OpenMP for Kokkos"
+    echo "  --enable-serial: enable serial for Kokkos"
     echo "  -g|--arch arch: set GPU architecture for CUDA builds (default Ampere 80)"
-    echo "  -d|--debug: debug build"
-    echo "  --mode build_mode: set build mode directly (Release, Debug, etc)"
-    echo "  -k|--kokkos: configure and build Kokkos"
-    echo "  -f|--heffte: configure and build heFFTe"
-    echo "  -i|--ippl: configure and build IPPL"
+
+    # heFFTe configuration
+    echo "  --enable-cufft: enable cuFFT for heFFTe"
+    echo "  --enable-fftw: enable FFTW for heFFTe"
+    echo "  --enable-mkl: enable MKL for heFFTe"
+
+    # IPPL configuration
     echo "  -c|--nofft: disable FFT (default enabled)"
     echo "  -u|--nounit: disable unit tests"
     echo "  --export: export compile commands for LSPs"
+    
+    # General build configuration
+    echo "  -d|--debug: debug build"
+    echo "  --mode build_mode: set build mode directly (Release, Debug, etc)"
+
+    # Choose build targets
+    echo "  -k|--kokkos: configure and build Kokkos"
+    echo "  -f|--heffte: configure and build heFFTe"
+    echo "  -i|--ippl: configure and build IPPL"
 }
 
 # POSIX compliant long options with getopts:
@@ -109,19 +122,27 @@ while getopts "ht:dkficug:-:" opt; do
     case $opt in
         h | help) help; exit 0 ;;
         t | target) needs_arg; build_type=$OPTARG ;;
+
         d | debug) mode=Debug ;;
+        mode) mode=$OPTARG ;;
+
         k | kokkos) build_kokkos=true ;;
         f | heffte) build_heffte=true ;;
         i | ippl) build_ippl=true ;;
+
         c | nofft) ENABLE_FFT=OFF; ENABLE_ALPINE=OFF ;;
         u | nounit) ENABLE_UNIT_TESTS=OFF ;;
-        g | arch) needs_arg; GPU_ARCH=$OPTARG ;;
         export) EXPORT_COMMANDS="-DCMAKE_EXPORT_COMPILE_COMMANDS=1" ;;
-        mode) mode=$OPTARG ;;
-        enable-cuda) CUDA=ON; CUFFT=ON ;;
-        enable-openmp) OPENMP=ON;;
-        enable-serial) SERIAL=ON;;
+
+        g | arch) needs_arg; GPU_ARCH=$OPTARG ;;
+        enable-cuda) CUDA=ON ;;
+        enable-openmp) OPENMP=ON ;;
+        enable-serial) SERIAL=ON ;;
+
+        enable-cufft) CUFFT=ON ;;
+        enable-fftw) FFTW=ON ;;
         enable-mkl) MKL=ON ;;
+
         ?) exit 1 ;;
     esac
 done
@@ -133,6 +154,7 @@ fi
 
 echo "Loading modules..."
 if [ ! -z "$PMODULES_HOME" ]; then
+    echo "PModules found. Loading modules..."
     module load gcc/11.4.0 gtest/1.13.0-1 openmpi/4.1.5_slurm fftw/3.3.10_merlin6
     module load cuda/12.1.1 cmake/3.25.2
 fi
