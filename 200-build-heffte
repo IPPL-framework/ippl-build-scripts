@@ -8,7 +8,7 @@ V_MAJOR=2
 V_MINOR=3
 V=${V_MAJOR}.${V_MINOR}.0
 V='master'
-backend=${backend:-fftw}
+backend=${backend:-stock}
 build_type=${build_type:-$backend}
 NJOBS=8
 trap "itb_exit" EXIT
