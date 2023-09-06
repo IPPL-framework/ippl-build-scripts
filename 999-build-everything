@@ -119,8 +119,8 @@ while getopts "ht:dkficug:-:" opt; do
         export) EXPORT_COMMANDS="-DCMAKE_EXPORT_COMPILE_COMMANDS=1" ;;
         mode) mode=$OPTARG ;;
         enable-cuda) CUDA=ON; CUFFT=ON ;;
-        enable-openmp) OPENMP=ON; FFTW=ON ;;
-        enable-serial) SERIAL=ON; FFTW=ON ;;
+        enable-openmp) OPENMP=ON;;
+        enable-serial) SERIAL=ON;;
         enable-mkl) MKL=ON ;;
         ?) exit 1 ;;
     esac
