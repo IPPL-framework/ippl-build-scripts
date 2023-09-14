@@ -51,7 +51,7 @@ cmake \
     -DENABLE_ALPINE="${ENABLE_ALPINE}" \
     -DCMAKE_CXX_COMPILER="${compiler}" \
     -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
-    "$ADDITIONAL_CMAKE_FLAGS" \
+    $ADDITIONAL_CMAKE_FLAGS \
     "${ITB_SRC_DIR}/$P"
 
 # compile & install
