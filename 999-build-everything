@@ -55,8 +55,10 @@ build_ippl=false
 
 # Kokkos backends
 CUDA=OFF
-OPENMP=${OPENMP:-OFF}
+OPENMP=OFF
 SERIAL=OFF
+GPU_ARCH=AMPERE80
+CPU_ARCH=NATIVE
 
 # heFFTe backends
 CUFFT=OFF
@@ -69,12 +71,10 @@ export ENABLE_ALPINE=ON
 export ENABLE_UNIT_TESTS=ON
 EXPORT_COMMANDS=
 
-# Hardware targets
-GPU_ARCH=AMPERE80
-
 function help() {
     echo "Usage: $0 [flags...]"
-    echo "For long form options, arguments must be given after an equal sign (--opt=arg)"
+    echo "For long form options, arguments must be given after an equal sign (--opt=arg)."
+    echo "Refer to the comments in this shell script for additional details."
     echo "Flags:"
     echo "  -h|--help: show this help"
 
@@ -85,7 +85,9 @@ function help() {
     echo "  --enable-cuda: enable CUDA for Kokkos"
     echo "  --enable-openmp: enable OpenMP for Kokkos"
     echo "  --enable-serial: enable serial for Kokkos"
-    echo "  -g|--arch arch: set GPU architecture for CUDA builds (default Ampere 80)"
+    # Architectures: https://kokkos.github.io/kokkos-core-wiki/keywords.html#keywords-arch
+    echo "  -g|--cudacc capability: set GPU compute capability for Kokkos CUDA (default Ampere 80, written as AMPERE80)"
+    echo "  -c|--cpu arch: set CPU architecture for Kokkos optimizations (default local machine, i.e. NATIVE)"
 
     # heFFTe configuration
     echo "  --enable-cufft: enable cuFFT for heFFTe"
@@ -93,13 +95,13 @@ function help() {
     echo "  --enable-mkl: enable MKL for heFFTe"
 
     # IPPL configuration
-    echo "  -c|--nofft: disable FFT (default enabled)"
-    echo "  -u|--nounit: disable unit tests"
+    echo "  -p|--nofft: disable FFTs in IPPL (default enabled)"
+    echo "  -u|--nounit: disable IPPL unit tests"
     # LSP: language server protocol (https://en.wikipedia.org/wiki/Language_Server_Protocol)
     # CMake can be configured to export information that would allow certain editor tools (like clangd)
     # to provide language- and program-aware diagnostics, such as signature mismatches or other
     # symbol-related errors.
-    echo "  --export: export compile commands for LSPs (such as clangd)"
+    echo "  --export: export IPPL compile commands for LSPs (such as clangd)"
     
     # General build configuration
     echo "  -d|--debug: debug build"
@@ -117,7 +119,7 @@ function help() {
 die() { echo $1; exit 1; }
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$opt option"; fi; }
 
-while getopts "ht:dkficug:-:" opt; do
+while getopts "ht:dkfic:pug:-:" opt; do
     if [ "$opt" = "-" ]; then   # long option: reformulate OPT and OPTARG
         opt="${OPTARG%%=*}"       # extract long option name
         OPTARG="${OPTARG#$opt}"   # extract long option argument (may be empty)
@@ -134,11 +136,12 @@ while getopts "ht:dkficug:-:" opt; do
         f | heffte) build_heffte=true ;;
         i | ippl) build_ippl=true ;;
 
-        c | nofft) ENABLE_FFT=OFF; ENABLE_ALPINE=OFF ;;
+        p | nofft) ENABLE_FFT=OFF; ENABLE_ALPINE=OFF ;;
         u | nounit) ENABLE_UNIT_TESTS=OFF ;;
         export) EXPORT_COMMANDS="-DCMAKE_EXPORT_COMPILE_COMMANDS=1" ;;
 
-        g | arch) needs_arg; GPU_ARCH=$OPTARG ;;
+        g | cudacc) needs_arg; GPU_ARCH=$OPTARG ;;
+        c | cpu) needs_arg; CPU_ARCH=$OPTARG ;;
         enable-cuda) CUDA=ON ;;
         enable-openmp) OPENMP=ON ;;
         enable-serial) SERIAL=ON ;;
@@ -167,7 +170,7 @@ export Kokkos_DIR=${Kokkos_DIR:-"${ITB_SRC_DIR}/Kokkos/Kokkos_${build_type}"}
 export Heffte_DIR=${Heffte_DIR:-"${ITB_SRC_DIR}/Heffte/Heffte_${build_type}"}
 
 if [ $build_kokkos == true ]; then
-    build_type=$build_type compute_capability=$GPU_ARCH \
+    build_type=$build_type compute_capability=$GPU_ARCH cpu_arch=$CPU_ARCH \
         ITB_PREFIX="$Kokkos_DIR" CUDA=$CUDA OPENMP=$OPENMP SERIAL=$SERIAL \
         $(dirname $0)/100-build-kokkos
 fi
