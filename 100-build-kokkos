@@ -11,6 +11,7 @@ build_type=${build_type:-serial}
 NJOBS=${NJOBS:-16}
 
 compute_capability=${compute_capability:-AMPERE80}
+cpu_arch=${cpu_arch:-NATIVE}
 
 trap "itb_exit" EXIT
 
@@ -59,6 +60,7 @@ cmake \
     -DCMAKE_CXX_EXTENSIONS=OFF \
     -DKokkos_ENABLE_SERIAL="${SERIAL}" \
     -DKokkos_ARCH_${compute_capability}="${CUDA}" \
+    -DKokkos_ARCH_${cpu_arch}=ON \
     -DKokkos_ENABLE_OPENMP="${OPENMP}" \
     -DKokkos_ENABLE_CUDA="${CUDA}" \
     -DKokkos_ENABLE_CUDA_LAMBDA="${CUDA}" \
