@@ -41,7 +41,8 @@ export -f itb_exit > /dev/null
 
 # General build parameters
 export build_type=
-export compiler=$(which g++)
+compiler=$(which g++)
+export compiler
 mode=Release
 
 export ITB_DOWNLOAD_DIR=${ITB_DOWNLOAD_DIR:-$PWD}
@@ -160,7 +161,7 @@ if [ -z "$build_type" ]; then
 fi
 
 echo "Loading modules..."
-if [ ! -z "$PMODULES_HOME" ]; then
+if [ -n "$PMODULES_HOME" ]; then
     echo "PModules found. Loading modules..."
     module load gcc/11.4.0 gtest/1.13.0-1 openmpi/4.1.5_slurm fftw/3.3.10_merlin6
     module load cuda/12.1.1 cmake/3.25.2
@@ -172,13 +173,13 @@ export Heffte_DIR=${Heffte_DIR:-"${ITB_SRC_DIR}/Heffte/Heffte_${build_type}"}
 if [ $build_kokkos == true ]; then
     build_type=$build_type compute_capability=$GPU_ARCH cpu_arch=$CPU_ARCH \
         ITB_PREFIX="$Kokkos_DIR" CUDA=$CUDA OPENMP=$OPENMP SERIAL=$SERIAL \
-        $(dirname $0)/100-build-kokkos
+        "$(dirname "$0")"/100-build-kokkos
 fi
 if [ $build_heffte == true ]; then
-    backend= build_type=$build_type \
+    backend='' build_type=$build_type \
         ITB_PREFIX="$Heffte_DIR" CUFFT=$CUFFT FFTW=$FFTW MKL=$MKL \
-        $(dirname $0)/200-build-heffte
+        "$(dirname "$0")"/200-build-heffte
 fi
 if [ $build_ippl == true ]; then
-    ADDITIONAL_CMAKE_FLAGS=$EXPORT_COMMANDS build_mode=$mode $(dirname $0)/300-build-ippl
+    ADDITIONAL_CMAKE_FLAGS=$EXPORT_COMMANDS build_mode=$mode "$(dirname "$0")"/300-build-ippl
 fi
