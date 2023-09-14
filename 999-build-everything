@@ -95,7 +95,11 @@ function help() {
     # IPPL configuration
     echo "  -c|--nofft: disable FFT (default enabled)"
     echo "  -u|--nounit: disable unit tests"
-    echo "  --export: export compile commands for LSPs"
+    # LSP: language server protocol (https://en.wikipedia.org/wiki/Language_Server_Protocol)
+    # CMake can be configured to export information that would allow certain editor tools (like clangd)
+    # to provide language- and program-aware diagnostics, such as signature mismatches or other
+    # symbol-related errors.
+    echo "  --export: export compile commands for LSPs (such as clangd)"
     
     # General build configuration
     echo "  -d|--debug: debug build"
