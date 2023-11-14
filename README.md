@@ -65,19 +65,11 @@ The IPPL script `300-build-ippl` builds IPPL using the dependencies with the app
 
 The `999-build-everything` script is an all-in-one wrapper install script for building IPPL and its dependencies. It accepts various command line arguments for customizing the exact bulid configuration.
 
-The following command will build IPPL and both its external dependencies for both CUDA and OpenMP. The build and install directories will be named `build_mixed` and `Kokkos_mixed` (or `Heffte_mixed`) and everything will be stored in the current working directory. Kokkos will be compiled to optimize for Pascal 6.1 (BIO nodes on Merlin 6) and compile commands will be generated for LSP support.
+The following command will build IPPL and both its external dependencies for both CUDA and OpenMP. The build and install directories will be named `build_mixed` and `Kokkos_mixed` (or `Heffte_mixed`) and everything will be stored in the current working directory. Kokkos will be compiled to optimize for Pascal 6.1 and compile commands will be generated for LSP support.
 
 ```sh
 ./build_recipes/999-build-everything -t mixed --enable-cuda --enable-openmp --kokkos --heffte --ippl --export --arch=PASCAL61
 ```
-
-If Pmodules are available, the build script will automatically load the necessary modules to compile IPPL and its dependencies:
-```
-module load gcc/11.4.0 gtest/1.13.0-1 openmpi/4.1.5_slurm fftw/3.3.10_merlin6
-module load cuda/12.1.1 cmake/3.25.2
-```
-
-You will need these modules to compile IPPL outside of the build script; it is recommended to have these modules loaded automatically when you log in. Running the build script does not load the modules in your shell. Sourcing the script would load the modules, but if the build script terminates due to incorrect inputs, it will also terminate your login shell, which may be undesired.
 
 ## Flags
 
