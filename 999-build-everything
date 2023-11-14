@@ -2,46 +2,48 @@
 
 itb_exit() {
     local -i ec=$?
-	if [[ -n "${BASH_VERSION}" ]]; then
+    if [[ -n "${BASH_VERSION}" ]]; then
         local -i n=${#BASH_SOURCE[@]}
         local -r recipe_name="${BASH_SOURCE[n]}"
-	else
-		local -r recipe_name="${ZSH_ARGZERO}"
-	fi
-        echo -n "${recipe_name}: "
-        if (( ec == 0 )); then
-                echo "done!"
-        elif (( ec == ITB_ERR_ARG )); then
-                echo "argument error!"
-        elif (( ec == ITB_ERR_SETUP )); then
-                echo "error in setting everything up!"
-        elif (( ec == ITB_ERR_SYSTEM )); then
-                echo "unexpected system error!"
-        elif (( ec == ITB_ERR_DOWNLOAD )); then
-                echo "error in downloading the source file!"
-        elif (( ec == ITB_ERR_UNTAR )); then
-                echo "error in un-taring the source file!"
-        elif (( ec == ITB_ERR_CONFIGURE )); then
-                echo "error in configuring the software!"
-        elif (( ec == ITB_ERR_MAKE )); then
-                echo "error in compiling the software!"
-        elif (( ec == ITB_ERR_PRE_INSTALL )); then
-                echo "error in pre-installing the software!"
-        elif (( ec == ITB_ERR_INSTALL )); then
-                echo "error in installing the software!"
-        elif (( ec == ITB_ERR_POST_INSTALL )); then
-                echo "error in post-installing the software!"
-        else
-                echo "oops, unknown error!!!"
-        fi
-        exit ${ec}
+    else
+        local -r recipe_name="${ZSH_ARGZERO}"
+    fi
+    echo -n "${recipe_name}: "
+    if (( ec == 0 )); then
+        echo "done!"
+    elif (( ec == ITB_ERR_ARG )); then
+        echo "argument error!"
+    elif (( ec == ITB_ERR_SETUP )); then
+        echo "error in setting everything up!"
+    elif (( ec == ITB_ERR_SYSTEM )); then
+        echo "unexpected system error!"
+    elif (( ec == ITB_ERR_DOWNLOAD )); then
+        echo "error in downloading the source file!"
+    elif (( ec == ITB_ERR_UNTAR )); then
+        echo "error in un-taring the source file!"
+    elif (( ec == ITB_ERR_CONFIGURE )); then
+        echo "error in configuring the software!"
+    elif (( ec == ITB_ERR_MAKE )); then
+        echo "error in compiling the software!"
+    elif (( ec == ITB_ERR_PRE_INSTALL )); then
+        echo "error in pre-installing the software!"
+    elif (( ec == ITB_ERR_INSTALL )); then
+        echo "error in installing the software!"
+    elif (( ec == ITB_ERR_POST_INSTALL )); then
+        echo "error in post-installing the software!"
+    else
+        echo "oops, unknown error!!!"
+    fi
+    exit ${ec}
 }
 
 export -f itb_exit > /dev/null
 
+
 # General build parameters
 export build_type=
-export compiler=$(which g++)
+compiler=${compiler:-$(which g++)}
+export compiler
 mode=Release
 
 export ITB_DOWNLOAD_DIR=${ITB_DOWNLOAD_DIR:-$PWD}
@@ -55,8 +57,10 @@ build_ippl=false
 
 # Kokkos backends
 CUDA=OFF
-OPENMP=${OPENMP:-OFF}
+OPENMP=OFF
 SERIAL=OFF
+GPU_ARCH=AMPERE80
+CPU_ARCH=NATIVE
 
 # heFFTe backends
 CUFFT=OFF
@@ -69,59 +73,85 @@ export ENABLE_ALPINE=ON
 export ENABLE_UNIT_TESTS=ON
 EXPORT_COMMANDS=
 
-# Hardware targets
-GPU_ARCH=AMPERE80
-
 function help() {
     echo "Usage: $0 [flags...]"
-    echo "For long form options, arguments must be given after an equal sign (--opt=arg)"
+    echo "For long form options, arguments must be given after an equal sign (--opt=arg)."
+    echo "Refer to the comments in this shell script for additional details."
     echo "Flags:"
     echo "  -h|--help: show this help"
+
     echo "  -t|--target target: preset build for target (cuda/openmp/serial) or name for custom build;"
     echo "                      this flag is REQUIRED as it will be used to identify the build directories"
-    echo "  --enable-cuda: build for CUDA (enables CUDA for Kokkos and cuFFT for heFFTe)"
-    echo "  --enable-openmp: build for OpenMP (enables OpenMP for Kokkos and FFTW for heFFTe)"
-    echo "  --enable-serial: enable serial for Kokkos (also enables FFTW for heFFTe)"
+
+    # Kokkos configuration
+    echo "  --enable-cuda: enable CUDA for Kokkos"
+    echo "  --enable-openmp: enable OpenMP for Kokkos"
+    echo "  --enable-serial: enable serial for Kokkos"
+    # Architectures: https://kokkos.github.io/kokkos-core-wiki/keywords.html#keywords-arch
+    echo "  -g|--cudacc capability: set GPU compute capability for Kokkos CUDA (default Ampere 80, written as AMPERE80)"
+    echo "  -c|--cpu arch: set CPU architecture for Kokkos optimizations (default local machine, i.e. NATIVE)"
+
+    # heFFTe configuration
+    echo "  --enable-cufft: enable cuFFT for heFFTe"
+    echo "  --enable-fftw: enable FFTW for heFFTe"
     echo "  --enable-mkl: enable MKL for heFFTe"
-    echo "  -g|--arch arch: set GPU architecture for CUDA builds (default Ampere 80)"
+
+    # IPPL configuration
+    echo "  -p|--nofft: disable FFTs in IPPL (default enabled)"
+    echo "  -u|--nounit: disable IPPL unit tests"
+    # LSP: language server protocol (https://en.wikipedia.org/wiki/Language_Server_Protocol)
+    # CMake can be configured to export information that would allow certain editor tools (like clangd)
+    # to provide language- and program-aware diagnostics, such as signature mismatches or other
+    # symbol-related errors.
+    echo "  --export: export IPPL compile commands for LSPs (such as clangd)"
+    
+    # General build configuration
     echo "  -d|--debug: debug build"
     echo "  --mode build_mode: set build mode directly (Release, Debug, etc)"
+
+    # Choose build targets
     echo "  -k|--kokkos: configure and build Kokkos"
     echo "  -f|--heffte: configure and build heFFTe"
     echo "  -i|--ippl: configure and build IPPL"
-    echo "  -c|--nofft: disable FFT (default enabled)"
-    echo "  -u|--nounit: disable unit tests"
-    echo "  --export: export compile commands for LSPs"
 }
 
 # POSIX compliant long options with getopts:
 # https://stackoverflow.com/a/28466267/2773311
 
-die() { echo $1; exit 1; }
+die() { echo "$1"; exit 1; }
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$opt option"; fi; }
 
-while getopts "ht:dkficug:-:" opt; do
+while getopts "ht:dkfic:pug:-:" opt; do
     if [ "$opt" = "-" ]; then   # long option: reformulate OPT and OPTARG
         opt="${OPTARG%%=*}"       # extract long option name
-        OPTARG="${OPTARG#$opt}"   # extract long option argument (may be empty)
+        OPTARG="${OPTARG#"$opt"}"   # extract long option argument (may be empty)
         OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
     fi
     case $opt in
         h | help) help; exit 0 ;;
         t | target) needs_arg; build_type=$OPTARG ;;
+
         d | debug) mode=Debug ;;
+        mode) mode=$OPTARG ;;
+
         k | kokkos) build_kokkos=true ;;
         f | heffte) build_heffte=true ;;
         i | ippl) build_ippl=true ;;
-        c | nofft) ENABLE_FFT=OFF; ENABLE_ALPINE=OFF ;;
+
+        p | nofft) ENABLE_FFT=OFF; ENABLE_ALPINE=OFF ;;
         u | nounit) ENABLE_UNIT_TESTS=OFF ;;
-        g | arch) needs_arg; GPU_ARCH=$OPTARG ;;
         export) EXPORT_COMMANDS="-DCMAKE_EXPORT_COMPILE_COMMANDS=1" ;;
-        mode) mode=$OPTARG ;;
-        enable-cuda) CUDA=ON; CUFFT=ON ;;
-        enable-openmp) OPENMP=ON; FFTW=ON ;;
-        enable-serial) SERIAL=ON; FFTW=ON ;;
+
+        g | cudacc) needs_arg; GPU_ARCH=$OPTARG ;;
+        c | cpu) needs_arg; CPU_ARCH=$OPTARG ;;
+        enable-cuda) CUDA=ON ;;
+        enable-openmp) OPENMP=ON ;;
+        enable-serial) SERIAL=ON ;;
+
+        enable-cufft) CUFFT=ON ;;
+        enable-fftw) FFTW=ON ;;
         enable-mkl) MKL=ON ;;
+
         ?) exit 1 ;;
     esac
 done
@@ -131,25 +161,19 @@ if [ -z "$build_type" ]; then
     exit 1
 fi
 
-echo "Loading modules..."
-if [ ! -z "$PMODULES_HOME" ]; then
-    module load gcc/11.4.0 gtest/1.13.0-1 openmpi/4.1.5_slurm fftw/3.3.10_merlin6
-    module load cuda/12.1.1 cmake/3.25.2
-fi
-
 export Kokkos_DIR=${Kokkos_DIR:-"${ITB_SRC_DIR}/Kokkos/Kokkos_${build_type}"}
 export Heffte_DIR=${Heffte_DIR:-"${ITB_SRC_DIR}/Heffte/Heffte_${build_type}"}
 
 if [ $build_kokkos == true ]; then
-    build_type=$build_type compute_capability=$GPU_ARCH \
+    build_type=$build_type compute_capability=$GPU_ARCH cpu_arch=$CPU_ARCH \
         ITB_PREFIX="$Kokkos_DIR" CUDA=$CUDA OPENMP=$OPENMP SERIAL=$SERIAL \
-        $(dirname $0)/100-build-kokkos
+        "$(dirname "$0")"/100-build-kokkos
 fi
 if [ $build_heffte == true ]; then
-    backend= build_type=$build_type \
+    backend='' build_type=$build_type \
         ITB_PREFIX="$Heffte_DIR" CUFFT=$CUFFT FFTW=$FFTW MKL=$MKL \
-        $(dirname $0)/200-build-heffte
+        "$(dirname "$0")"/200-build-heffte
 fi
 if [ $build_ippl == true ]; then
-    ADDITIONAL_CMAKE_FLAGS=$EXPORT_COMMANDS build_mode=$mode $(dirname $0)/300-build-ippl
+    ADDITIONAL_CMAKE_FLAGS=$EXPORT_COMMANDS build_mode=$mode "$(dirname "$0")"/300-build-ippl
 fi

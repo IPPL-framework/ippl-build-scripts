@@ -8,10 +8,6 @@ ENABLE_UNIT_TESTS=${ENABLE_UNIT_TESTS:-ON}
 NJOBS=8
 trap "itb_exit" EXIT
 
-# compiler="$(which mpicxx)"
-CUDA=OFF
-SERIAL=OFF
-OPENMP=OFF
 CXXFLAGS=""
 
 build_mode=${build_mode:-Release}
@@ -19,7 +15,7 @@ compiler=${compiler:-"$(which gcc)"}
 
 if [[ "$build_type" == "cuda" ]]; then
     echo "Build Cuda mode."
-    compiler="${Kokkos_DIR}/bin/nvcc_wrapper"
+    compiler="${Kokkos_DIR:?Kokkos install directory must be provided}/bin/nvcc_wrapper"
     CXXFLAGS="--expt-relaxed-constexpr"
 elif [[ "$build_type" == "serial" ]]; then
     echo "Build serial mode."
@@ -29,31 +25,31 @@ else
     echo "Wrong build type."
 fi
 
-cd "${ITB_SRC_DIR}"
+cd "${ITB_SRC_DIR}" || exit "${ITB_ARG_ERR}"
 if [ -d "ippl" ] 
 then
     echo "Found existing IPPL source directory"
 else
     echo "Clone ippl repo ... "
-    if [ ! -z "$USE_SSH" ]; then
+    if [ -n "$USE_SSH" ]; then
         git clone git@github.com:IPPL-framework/ippl.git
     else
         git clone https://github.com/IPPL-framework/ippl.git
     fi
 fi
 
-mkdir -p "${ITB_SRC_DIR}/$P/build_$build_type" && cd $_
+mkdir -p "${ITB_SRC_DIR}/$P/build_$build_type" && cd "$_" || exit "${ITB_ARG_ERR}"
 
 cmake \
-    -DCMAKE_BUILD_TYPE=${build_mode} \
-    -DCMAKE_INSTALL_PREFIX=${ITB_PREFIX} \
+    -DCMAKE_BUILD_TYPE="${build_mode}" \
+    -DCMAKE_INSTALL_PREFIX="${ITB_PREFIX}" \
     -DCMAKE_CXX_EXTENSIONS=OFF \
     -DENABLE_TESTS=ON \
     -DENABLE_UNIT_TESTS="${ENABLE_UNIT_TESTS}" \
     -DENABLE_FFT="${ENABLE_FFT}" \
     -DENABLE_SOLVERS="${ENABLE_SOLVERS}" \
     -DENABLE_ALPINE="${ENABLE_ALPINE}" \
-    -DCMAKE_CXX_COMPILER=${compiler} \
+    -DCMAKE_CXX_COMPILER="${compiler}" \
     -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
     $ADDITIONAL_CMAKE_FLAGS \
     "${ITB_SRC_DIR}/$P"

@@ -8,12 +8,12 @@ V_MAJOR=2
 V_MINOR=3
 V=${V_MAJOR}.${V_MINOR}.0
 V='master'
-backend=${backend:-fftw}
+backend=${backend:-stock}
 build_type=${build_type:-$backend}
 NJOBS=8
 trap "itb_exit" EXIT
 
-mkdir -p "${ITB_SRC_DIR}/$P" && cd "$_"
+mkdir -p "${ITB_SRC_DIR}/$P" && cd "$_" || exit "${ITB_ARG_ERR}"
 
 if [ ! -d $P-$V ]; then
     if [ "$V" = "master" ]; then
@@ -36,7 +36,7 @@ else
     echo "Found existing installation"
 fi
 
-cd "$OLDPWD"
+cd "$OLDPWD" || exit "${ITB_ARG_ERR}"
 
 CUFFT=${CUFFT:-OFF}
 FFTW=${FFTW:-OFF}
@@ -44,16 +44,16 @@ MKL=${MKL:-OFF}
 
 if [[ "$backend" == "cufft" || "$build_type" == "cuda" ]]; then
     CUFFT=ON
-elif [[ "$backend" == "fftw" || "$build_type" == "openmp" || "$build_type" == "serial" ]]; then
+elif [[ "$backend" == "fftw" ]]; then
     FFTW=ON
 elif [[ "$backend" == "mkl" ]]; then
     MKL=ON
 fi
 
-mkdir -p ${ITB_SRC_DIR}/$P/build_${build_type} && cd $_
+mkdir -p "${ITB_SRC_DIR}"/$P/"build_${build_type}" && cd "$_" || exit "${ITB_ARG_ERR}"
 
 cmake \
-    -DCMAKE_INSTALL_PREFIX=${ITB_PREFIX} \
+    -DCMAKE_INSTALL_PREFIX="${ITB_PREFIX}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
     -DHeffte_ENABLE_FFTW="${FFTW}" \
@@ -62,7 +62,7 @@ cmake \
     -DCUDA_TOOLKIT_ROOT_DIR="${CUDA_DIR}" \
     -DHeffte_ENABLE_MKL="${MKL}" \
     -DMKL_ROOT="${MKL_DIR}" \
-    ${ITB_SRC_DIR}/$P/$P-$V || exit ${ITB_ERR_CONFIGURE}
+    "${ITB_SRC_DIR}"/$P/$P-$V || exit "${ITB_ERR_CONFIGURE}"
 
 # compile & install
 make -j ${NJOBS}

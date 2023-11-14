@@ -11,10 +11,11 @@ build_type=${build_type:-serial}
 NJOBS=${NJOBS:-16}
 
 compute_capability=${compute_capability:-AMPERE80}
+cpu_arch=${cpu_arch:-NATIVE}
 
 trap "itb_exit" EXIT
 
-FNAME="$P-$V.tar.xz"
+FNAME="$P-$V.tar.gz"
 DOWNLOAD_URL="https://github.com/kokkos/kokkos/archive/$V/${FNAME}"
 SRC_FILE="${ITB_DOWNLOAD_DIR}/${FNAME}"
 
@@ -22,11 +23,11 @@ if [ ! -f "$SRC_FILE" ]; then
     # download
     curl -L \
         --output "${SRC_FILE}" \
-        "https://github.com/kokkos/kokkos/archive/$V/$P-$V.tar.gz"
+        "$DOWNLOAD_URL"
 
     # unpack
-    mkdir -p "${ITB_SRC_DIR}/$P" && cd "$_" || exit ${ITB_ERR_SYSTEM}
-    tar xvf "${SRC_FILE}" || exit ${ITB_ERR_UNTAR}
+    mkdir -p "${ITB_SRC_DIR}/$P" && cd "$_" || exit "${ITB_ERR_SYSTEM}"
+    tar xvf "${SRC_FILE}" || exit "${ITB_ERR_UNTAR}"
 fi
 
 compiler=${compiler:-"$(which gcc)"}
@@ -45,26 +46,27 @@ elif [[ "$build_type" == "openmp" ]]; then
     OPENMP=ON
 fi
 
-if [ $CUDA == "ON" ]; then
+if [ "$CUDA" == "ON" ]; then
     compiler="${ITB_SRC_DIR}/$P/$P-$V/bin/nvcc_wrapper"
 fi
 
-mkdir -p "${ITB_SRC_DIR}/$P"/build_$build_type && cd $_
+mkdir -p "${ITB_SRC_DIR}/$P"/"build_$build_type" && cd "$_" || exit "${ITB_ARG_ERR}"
 
 cmake \
-    -DCMAKE_INSTALL_PREFIX=${ITB_PREFIX} \
+    -DCMAKE_INSTALL_PREFIX="${ITB_PREFIX}" \
     -DCMAKE_CXX_COMPILER="${compiler}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 \
     -DCMAKE_CXX_EXTENSIONS=OFF \
     -DKokkos_ENABLE_SERIAL="${SERIAL}" \
-    -DKokkos_ARCH_${compute_capability}="${CUDA}" \
+    -DKokkos_ARCH_"${compute_capability}"="${CUDA}" \
+    -DKokkos_ARCH_"${cpu_arch}"=ON \
     -DKokkos_ENABLE_OPENMP="${OPENMP}" \
     -DKokkos_ENABLE_CUDA="${CUDA}" \
     -DKokkos_ENABLE_CUDA_LAMBDA="${CUDA}" \
     -DKokkos_ENABLE_CUDA_UVM=OFF \
-    ${ITB_SRC_DIR}/$P/$P-$V || exit ${ITB_ERR_CONFIGURE}
+    "${ITB_SRC_DIR}"/$P/$P-$V || exit "${ITB_ERR_CONFIGURE}"
 
 # compile & install
-make -j ${NJOBS}
+make -j "${NJOBS}"
 make install
