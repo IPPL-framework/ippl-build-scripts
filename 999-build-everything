@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 
 itb_exit() {
     local -i ec=$?
@@ -49,6 +49,7 @@ mode=Release
 export ITB_DOWNLOAD_DIR=${ITB_DOWNLOAD_DIR:-$PWD}
 export ITB_SRC_DIR=${ITB_SRC_DIR:-$PWD}
 export ITB_PREFIX=${ITB_PREFIX:-$PWD}
+
 
 # Build targets
 build_kokkos=false
@@ -164,14 +165,16 @@ fi
 export Kokkos_DIR=${Kokkos_DIR:-"${ITB_SRC_DIR}/Kokkos/Kokkos_${build_type}"}
 export Heffte_DIR=${Heffte_DIR:-"${ITB_SRC_DIR}/Heffte/Heffte_${build_type}"}
 
+export ITB_PREFIX=${ITB_PREFIX}_${build_type}
+
 if [ $build_kokkos == true ]; then
     build_type=$build_type compute_capability=$GPU_ARCH cpu_arch=$CPU_ARCH \
-        ITB_PREFIX="$Kokkos_DIR" CUDA=$CUDA OPENMP=$OPENMP SERIAL=$SERIAL \
+         CUDA=$CUDA OPENMP=$OPENMP SERIAL=$SERIAL \
         "$(dirname "$0")"/100-build-kokkos
 fi
 if [ $build_heffte == true ]; then
     backend='' build_type=$build_type \
-        ITB_PREFIX="$Heffte_DIR" CUFFT=$CUFFT FFTW=$FFTW MKL=$MKL \
+         CUFFT=$CUFFT FFTW=$FFTW MKL=$MKL \
         "$(dirname "$0")"/200-build-heffte
 fi
 if [ $build_ippl == true ]; then
