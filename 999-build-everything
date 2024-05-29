@@ -162,10 +162,9 @@ if [ -z "$build_type" ]; then
     exit 1
 fi
 
-export Kokkos_DIR=${Kokkos_DIR:-"${ITB_SRC_DIR}/Kokkos/Kokkos_${build_type}"}
-export Heffte_DIR=${Heffte_DIR:-"${ITB_SRC_DIR}/Heffte/Heffte_${build_type}"}
-
 export ITB_PREFIX=${ITB_PREFIX}_${build_type}
+export Kokkos_DIR=${ITB_PREFIX}
+export Heffte_DIR=${ITB_PREFIX}
 
 if [ $build_kokkos == true ]; then
     build_type=$build_type compute_capability=$GPU_ARCH cpu_arch=$CPU_ARCH \
