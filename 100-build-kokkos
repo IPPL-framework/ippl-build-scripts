@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 #
 # IPPL Toolchain Build recipe for Kokkos
 #
@@ -53,7 +53,7 @@ fi
 mkdir -p "${ITB_SRC_DIR}/$P"/"build_$build_type" && cd "$_" || exit "${ITB_ARG_ERR}"
 
 cmake \
-    -DCMAKE_INSTALL_PREFIX="${ITB_PREFIX}" \
+    -DCMAKE_INSTALL_PREFIX="/psi/home/adelmann/git/ippl-build-scripts/install_${build_type}" \
     -DCMAKE_CXX_COMPILER="${compiler}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 \

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 P=ippl
 build_type=${build_type:-serial}
 ENABLE_FFT=${ENABLE_FFT:-ON}
@@ -39,7 +39,7 @@ else
 fi
 
 mkdir -p "${ITB_SRC_DIR}/$P/build_$build_type" && cd "$_" || exit "${ITB_ARG_ERR}"
-
+echo "Unit tests ${ENABLE_UNIT_TESTS}"
 cmake \
     -DCMAKE_BUILD_TYPE="${build_mode}" \
     -DCMAKE_INSTALL_PREFIX="${ITB_PREFIX}" \
@@ -50,7 +50,7 @@ cmake \
     -DENABLE_SOLVERS="${ENABLE_SOLVERS}" \
     -DENABLE_ALPINE="${ENABLE_ALPINE}" \
     -DCMAKE_CXX_COMPILER="${compiler}" \
-    -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
+    -DCMAKE_CXX_FLAGS="$CXXFLAGS -Wno-error=parentheses" \
     $ADDITIONAL_CMAKE_FLAGS \
     "${ITB_SRC_DIR}/$P"
 
